@@ -1,11 +1,13 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-}
+const getMongoURI = () => {
+  const uri = process.env.MONGODB_URI?.trim();
+  if (!uri) {
+    console.error('CRITICAL: MONGODB_URI is not defined in environment variables');
+  }
+  return uri;
+};
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
@@ -18,6 +20,12 @@ if (!cached) {
 }
 
 async function connectDB() {
+  const MONGODB_URI = getMongoURI();
+  
+  if (!MONGODB_URI) {
+    throw new Error('Błąd konfiguracji: Brak zmiennej MONGODB_URI w ustawieniach Vercel. Dodaj ją w Settings -> Environment Variables.');
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -25,18 +33,18 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 10000, // 10s timeout for server selection
-      connectTimeoutMS: 10000,        // 10s timeout for initial connection
-      family: 4,                      // Force IPv4 to bypass DNS SRV issues on Vercel
-      maxPoolSize: 10,                // Maintain a small pool for serverless
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      family: 4,
+      maxPoolSize: 1, // Keep it minimal for serverless
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
       console.log('MongoDB Connected successfully');
       return mongoose;
     }).catch(err => {
       console.error('MongoDB Connection Error:', err);
-      cached.promise = null; // Reset promise on failure to allow retry
+      cached.promise = null;
       throw err;
     });
   }
@@ -151,6 +159,7 @@ const reportSchema = new mongoose.Schema<IReport>({
   notes: String
 }, { timestamps: true });
 
+// Models
 export const User = (mongoose.models.User as mongoose.Model<IUser>) || mongoose.model<IUser>('User', userSchema);
 export const Equipment = (mongoose.models.Equipment as mongoose.Model<IEquipment>) || mongoose.model<IEquipment>('Equipment', equipmentSchema);
 export const Rental = (mongoose.models.Rental as mongoose.Model<IRental>) || mongoose.model<IRental>('Rental', rentalSchema);

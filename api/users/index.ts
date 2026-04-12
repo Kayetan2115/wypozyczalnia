@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import connectDB, { User } from '../../src/lib/mongodb';
+import connectDB, { User } from '../../src/lib/mongodb.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Content-Type', 'application/json');
