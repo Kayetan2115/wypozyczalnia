@@ -2,10 +2,10 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import connectDB, { User } from '../../src/lib/mongodb';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await connectDB();
   res.setHeader('Content-Type', 'application/json');
 
   try {
+    await connectDB();
     if (req.method === 'GET') {
       const users = await User.find({}).select('-password');
       return res.status(200).json(users);

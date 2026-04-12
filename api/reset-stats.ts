@@ -2,14 +2,14 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import connectDB, { Rental, Report, Equipment } from '../src/lib/mongodb';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Content-Type', 'application/json');
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  await connectDB();
-  res.setHeader('Content-Type', 'application/json');
-
   try {
+    await connectDB();
     // 1. Delete all rentals
     await Rental.deleteMany({});
     

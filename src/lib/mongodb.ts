@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const MONGODB_URI = process.env.MONGODB_URI?.trim();
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
@@ -9,8 +9,7 @@ if (!MONGODB_URI) {
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
+ * in development and across function invocations in production (Vercel).
  */
 let cached = (global as any).mongoose;
 
@@ -26,32 +25,18 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 15000, // Increased timeout for DNS resolution
-      connectTimeoutMS: 15000,
-      family: 4, // Force IPv4 to bypass DNS SRV resolution issues on Vercel
-      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000, // 10s timeout for server selection
+      connectTimeoutMS: 10000,        // 10s timeout for initial connection
+      family: 4,                      // Force IPv4 to bypass DNS SRV issues on Vercel
+      maxPoolSize: 10,                // Maintain a small pool for serverless
     };
 
-    const connectWithRetry = async (retries = 5): Promise<typeof mongoose> => {
-      try {
-        console.log(`Attempting MongoDB connection (Retries left: ${retries})...`);
-        // Using the URI from process.env directly to ensure it's fresh
-        return await mongoose.connect(process.env.MONGODB_URI!, opts);
-      } catch (err) {
-        if (retries > 0) {
-          console.warn('MongoDB connection failed, retrying in 3s...', err);
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          return connectWithRetry(retries - 1);
-        }
-        throw err;
-      }
-    };
-
-    cached.promise = connectWithRetry().then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
       console.log('MongoDB Connected successfully');
       return mongoose;
     }).catch(err => {
-      console.error('CRITICAL: MongoDB Connection Failed after all retries:', err);
+      console.error('MongoDB Connection Error:', err);
+      cached.promise = null; // Reset promise on failure to allow retry
       throw err;
     });
   }

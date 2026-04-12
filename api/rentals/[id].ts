@@ -2,11 +2,11 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import connectDB, { Rental } from '../../src/lib/mongodb';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await connectDB();
   res.setHeader('Content-Type', 'application/json');
   const { id } = req.query;
 
   try {
+    await connectDB();
     if (req.method === 'PUT') {
       const rental = await Rental.findByIdAndUpdate(id, req.body, { new: true });
       if (!rental) return res.status(404).json({ error: 'Rental not found' });

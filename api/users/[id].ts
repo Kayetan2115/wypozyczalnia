@@ -2,11 +2,11 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import connectDB, { User } from '../../src/lib/mongodb';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await connectDB();
   res.setHeader('Content-Type', 'application/json');
   const { id } = req.query;
 
   try {
+    await connectDB();
     if (req.method === 'PUT') {
       const updates = { ...req.body };
       if (updates.password) {

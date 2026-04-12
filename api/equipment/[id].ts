@@ -2,11 +2,11 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import connectDB, { Equipment } from '../../src/lib/mongodb';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await connectDB();
   res.setHeader('Content-Type', 'application/json');
   const { id } = req.query;
 
   try {
+    await connectDB();
     if (req.method === 'PUT') {
       const item = await Equipment.findByIdAndUpdate(id, req.body, { new: true });
       if (!item) return res.status(404).json({ error: 'Equipment not found' });
