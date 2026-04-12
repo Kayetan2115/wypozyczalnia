@@ -1,0 +1,5 @@
+{
+  "name": "śwopr - System Zarządzania Wypożyczalnią",
+  "description": "System zarządzania wypożyczalnią sprzętu wodnego z panelem admina i mobilnym interfejsem sprzedawcy.",
+  "requestFramePermissions": []
+}
