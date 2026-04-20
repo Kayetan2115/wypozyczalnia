@@ -74,6 +74,7 @@ export interface IEquipment extends mongoose.Document {
   type: string;
   status: 'available' | 'rented' | 'broken';
   hourlyRate: number;
+  halfHourRate?: number;
   issueDescription?: string;
 }
 
@@ -82,7 +83,9 @@ export interface IRental extends mongoose.Document {
   equipmentName: string;
   startTime: Date;
   endTime?: Date;
-  plannedDuration: number;
+  plannedMinutes: number;
+  rateUsed: number; // The numeric rate value at start
+  rateType: '30min' | '1h'; // Which rate was chosen
   customerPhone?: string;
   deposit: boolean;
   sellerId: string;
@@ -131,6 +134,7 @@ const equipmentSchema = new mongoose.Schema<IEquipment>({
   type: String,
   status: { type: String, enum: ['available', 'rented', 'broken'], default: 'available' },
   hourlyRate: Number,
+  halfHourRate: { type: Number, default: 0 },
   issueDescription: String
 }, { timestamps: true });
 
@@ -139,7 +143,9 @@ const rentalSchema = new mongoose.Schema<IRental>({
   equipmentName: String,
   startTime: Date,
   endTime: Date,
-  plannedDuration: Number,
+  plannedMinutes: Number,
+  rateUsed: Number,
+  rateType: { type: String, enum: ['30min', '1h'], default: '1h' },
   customerPhone: String,
   deposit: Boolean,
   sellerId: String,

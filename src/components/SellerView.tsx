@@ -47,33 +47,47 @@ export default function SellerView({ user }: { user: UserProfile }) {
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false);
   
   const [customerPhone, setCustomerPhone] = useState('');
-  const [plannedDuration, setPlannedDuration] = useState(1);
-  const [hasDeposit, setHasDeposit] = useState(false);
+  const [plannedMinutes, setPlannedMinutes] = useState(60);
+  const [rateType, setRateType] = useState<'30min' | '1h'>('1h');
   const [activeRentalToStop, setActiveRentalToStop] = useState<Rental | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [issueDescription, setIssueDescription] = useState('');
 
+  const calculatePrice = (equipment: Equipment | null, minutes: number, type: '30min' | '1h') => {
+    if (!equipment) return 0;
+    const rate = type === '30min' ? equipment.halfHourRate : equipment.hourlyRate;
+    const units = type === '30min' ? minutes / 30 : minutes / 60;
+    return rate * units;
+  };
+
   const handleStartRental = async () => {
     if (!selectedEquipment) return;
     try {
+      const rateUsed = rateType === '30min' ? selectedEquipment.halfHourRate : selectedEquipment.hourlyRate;
+      const totalAmount = calculatePrice(selectedEquipment, plannedMinutes, rateType);
+
       const rentalData = {
         equipmentId: selectedEquipment.id,
         equipmentName: selectedEquipment.name,
         startTime: new Date().toISOString(),
-        deposit: hasDeposit,
+        deposit: false,
         customerPhone,
-        plannedDuration,
+        plannedMinutes,
+        rateUsed,
+        rateType,
+        totalAmount,
+        paymentMethod,
         sellerId: user.uid,
         sellerName: user.name,
         status: 'active'
       };
       await api.createRental(rentalData);
       await api.updateEquipment(selectedEquipment.id, { status: 'rented' });
-      toast.success(`Wypożyczono: ${selectedEquipment.name}`);
+      toast.success(`Wypożyczono: ${selectedEquipment.name} (${totalAmount} PLN)`);
       setIsStartDialogOpen(false);
       setCustomerPhone('');
-      setPlannedDuration(1);
-      setHasDeposit(false);
+      setPlannedMinutes(60);
+      setRateType('1h');
       fetchData();
     } catch (error) {
       toast.error('Błąd podczas rozpoczynania wypożyczenia');
@@ -85,25 +99,30 @@ export default function SellerView({ user }: { user: UserProfile }) {
     try {
       const endTime = new Date().toISOString();
       const startTime = new Date(activeRentalToStop.startTime);
-      const minutes = differenceInMinutes(new Date(endTime), startTime);
-      const plannedMinutes = activeRentalToStop.plannedDuration * 60;
-      const overtimeMinutes = Math.max(0, minutes - plannedMinutes);
+      const actualMinutes = differenceInMinutes(new Date(endTime), startTime);
+      const plannedMinutes = activeRentalToStop.plannedMinutes;
+      const overtimeMinutes = Math.max(0, actualMinutes - plannedMinutes);
       
-      const eq = equipment.find(e => e.id === activeRentalToStop.equipmentId);
-      const hourlyRate = eq?.hourlyRate || 0;
+      let finalTotal = activeRentalToStop.totalAmount || 0;
       
-      const totalAmount = Math.max(hourlyRate * activeRentalToStop.plannedDuration, Math.ceil(minutes / 60 * hourlyRate));
+      if (overtimeMinutes > 0) {
+        const unitSize = activeRentalToStop.rateType === '30min' ? 30 : 60;
+        const extraUnits = Math.ceil(overtimeMinutes / unitSize);
+        const extraCharge = extraUnits * activeRentalToStop.rateUsed;
+        finalTotal += extraCharge;
+        toast.info(`Naliczono nadgodziny: +${extraCharge} PLN`);
+      }
 
       // Update rental
       await api.updateRental(activeRentalToStop.id, {
         endTime,
-        totalAmount,
+        totalAmount: finalTotal,
         overtimeMinutes,
-        paymentMethod,
         status: 'completed'
       });
       
       // Update equipment status and issue if reported
+      const eq = equipment.find(e => e.id === activeRentalToStop.equipmentId);
       if (eq) {
         const isBroken = issueDescription.trim().length > 0;
         await api.updateEquipment(eq.id, { 
@@ -116,7 +135,7 @@ export default function SellerView({ user }: { user: UserProfile }) {
         }
       }
       
-      toast.success(`Zakończono: ${activeRentalToStop.equipmentName}. Kwota: ${totalAmount} PLN`);
+      toast.success(`Zakończono: ${activeRentalToStop.equipmentName}. Suma: ${finalTotal} PLN`);
       setIsStopDialogOpen(false);
       
       // Reset state
@@ -186,12 +205,29 @@ export default function SellerView({ user }: { user: UserProfile }) {
                   <div>
                     <h3 className="font-bold text-slate-900">{rental.equipmentName}</h3>
                     <p className="text-xs text-slate-500">
-                      Od: {format(new Date(rental.startTime), 'HH:mm')}
+                      Od: {format(new Date(rental.startTime), 'HH:mm')} ({rental.plannedMinutes} min)
                     </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-blue-600">{rental.totalAmount} PLN</p>
+                    <Badge variant="outline" className="text-[10px] uppercase">{rental.paymentMethod}</Badge>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    {rental.customerPhone && (
+                      <div className="flex items-center gap-1 text-[10px] text-slate-600">
+                        <Phone className="h-2.5 w-2.5" /> {rental.customerPhone}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-slate-400">
+                      Tempo: {rental.rateType === '30min' ? '30m' : '1h'}
+                    </div>
                   </div>
                   <Button 
                     size="sm" 
                     variant="destructive" 
+                    className="h-8 px-3"
                     onClick={() => {
                       setActiveRentalToStop(rental);
                       setIsStopDialogOpen(true);
@@ -200,16 +236,6 @@ export default function SellerView({ user }: { user: UserProfile }) {
                     <Square className="mr-1 h-3 w-3" /> STOP
                   </Button>
                 </div>
-                {rental.customerPhone && (
-                  <div className="mt-2 flex items-center gap-1 text-xs text-slate-600">
-                    <Phone className="h-3 w-3" /> {rental.customerPhone}
-                  </div>
-                )}
-                {rental.deposit && (
-                  <Badge variant="outline" className="mt-2 bg-amber-50 text-amber-700 border-amber-200">
-                    Kaucja
-                  </Badge>
-                )}
               </CardContent>
             </Card>
           ))}
@@ -305,28 +331,94 @@ export default function SellerView({ user }: { user: UserProfile }) {
             <DialogTitle>Rozpocznij: {selectedEquipment?.name}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="duration">Czas wypożyczenia (godziny)</Label>
-              <div className="flex items-center gap-4">
+            <div className="grid gap-3">
+              <Label>Wybierz czas i stawkę</Label>
+              <div className="flex gap-2">
                 <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => setPlannedDuration(Math.max(1, plannedDuration - 1))}
+                  type="button"
+                  variant={rateType === '30min' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setRateType('30min');
+                    setPlannedMinutes(30);
+                  }}
+                  className="flex-1"
                 >
-                  -
+                  30 min ({selectedEquipment?.halfHourRate} zł)
                 </Button>
-                <span className="text-xl font-bold w-12 text-center">{plannedDuration}h</span>
                 <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => setPlannedDuration(plannedDuration + 1)}
+                  type="button"
+                  variant={rateType === '1h' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setRateType('1h');
+                    setPlannedMinutes(60);
+                  }}
+                  className="flex-1"
                 >
-                  +
+                  1 godz. ({selectedEquipment?.hourlyRate} zł)
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2 mt-2">
+                {[30, 60, 90, 120, 150, 180, 240, 300].map(mins => (
+                  <Button
+                    key={mins}
+                    type="button"
+                    variant={plannedMinutes === mins ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-8 text-xs font-mono"
+                    onClick={() => {
+                      setPlannedMinutes(mins);
+                      // Auto switch rate type based on logic or keep current?
+                      // If user selects 30 or 90 and current is 1h, maybe stay or switch?
+                      // Let's keep it manual or simple:
+                      if (mins % 60 !== 0) setRateType('30min');
+                    }}
+                  >
+                    {mins >= 60 ? `${mins/60}h` : `${mins}m`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center">
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase font-bold">Do zapłaty z góry</p>
+                <p className="text-2xl font-black text-blue-600">
+                  {calculatePrice(selectedEquipment, plannedMinutes, rateType)} PLN
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-slate-500 uppercase font-bold">Stawka</p>
+                <p className="text-sm font-semibold">{rateType === '30min' ? '30 min' : '1 godz'}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Metoda płatności (z góry)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  type="button"
+                  variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                  onClick={() => setPaymentMethod('cash')}
+                  className="h-12 flex-col gap-1"
+                >
+                  <Wallet className="h-4 w-4" /> Gotówka
+                </Button>
+                <Button 
+                  type="button"
+                  variant={paymentMethod === 'card' ? 'default' : 'outline'}
+                  onClick={() => setPaymentMethod('card')}
+                  className="h-12 flex-col gap-1"
+                >
+                  <CreditCard className="h-4 w-4" /> Karta
                 </Button>
               </div>
             </div>
+
             <div className="grid gap-2">
-              <Label htmlFor="phone">Numer telefonu (opcjonalnie)</Label>
+              <Label htmlFor="phone">Numer telefonu klienta</Label>
               <Input 
                 id="phone" 
                 placeholder="np. 123456789" 
@@ -334,17 +426,9 @@ export default function SellerView({ user }: { user: UserProfile }) {
                 onChange={(e) => setCustomerPhone(e.target.value)}
               />
             </div>
-            <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="deposit">Kaucja pobrana?</Label>
-              <Switch 
-                id="deposit" 
-                checked={hasDeposit}
-                onCheckedChange={setHasDeposit}
-              />
-            </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleStartRental} className="w-full py-6 text-lg">START</Button>
+            <Button onClick={handleStartRental} className="w-full py-6 text-lg font-bold">PRZYJMIJ WPŁATĘ I START</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -359,45 +443,38 @@ export default function SellerView({ user }: { user: UserProfile }) {
             <div className="text-center space-y-2">
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wider">Czas trwania</p>
-                <p className="text-2xl font-bold">
+                <p className="text-3xl font-black text-slate-900">
                   {activeRentalToStop && differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime))} min
                 </p>
               </div>
               {activeRentalToStop && (
-                <div className="flex justify-center gap-4 text-sm">
+                <div className="flex justify-center gap-4 text-sm bg-slate-50 p-4 rounded-xl">
                   <div>
-                    <p className="text-slate-500">Planowo</p>
-                    <p className="font-semibold">{activeRentalToStop.plannedDuration}h</p>
+                    <p className="text-slate-500 text-[10px] uppercase font-bold">Opłacono</p>
+                    <p className="font-semibold">{activeRentalToStop.plannedMinutes} min</p>
+                    <p className="text-xs text-blue-600 font-bold">{activeRentalToStop.totalAmount} PLN</p>
                   </div>
-                  {differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) > activeRentalToStop.plannedDuration * 60 && (
-                    <div>
-                      <p className="text-red-500 font-bold">Nadgodziny</p>
+                  {differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) > activeRentalToStop.plannedMinutes && (
+                    <div className="border-l pl-4">
+                      <p className="text-red-500 text-[10px] uppercase font-bold">Nadgodziny</p>
                       <p className="font-semibold text-red-600">
-                        {differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) - activeRentalToStop.plannedDuration * 60} min
+                        {differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) - activeRentalToStop.plannedMinutes} min
+                      </p>
+                      <p className="text-xs text-red-600 font-bold">
+                        +{Math.ceil((differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) - activeRentalToStop.plannedMinutes) / (activeRentalToStop.rateType === '30min' ? 30 : 60)) * activeRentalToStop.rateUsed} PLN
                       </p>
                     </div>
                   )}
                 </div>
               )}
             </div>
-            <div className="grid gap-2">
-              <Label>Metoda płatności</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  variant={paymentMethod === 'cash' ? 'default' : 'outline'}
-                  onClick={() => setPaymentMethod('cash')}
-                  className="h-16 flex-col gap-1"
-                >
-                  <Wallet className="h-5 w-5" /> Gotówka
-                </Button>
-                <Button 
-                  variant={paymentMethod === 'card' ? 'default' : 'outline'}
-                  onClick={() => setPaymentMethod('card')}
-                  className="h-16 flex-col gap-1"
-                >
-                  <CreditCard className="h-5 w-5" /> Karta
-                </Button>
-              </div>
+            
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-center text-slate-600">
+                Płatność została uregulowana z góry ({activeRentalToStop?.paymentMethod === 'cash' ? 'Gotówka' : 'Karta'}).
+                {differenceInMinutes(new Date(), new Date(activeRentalToStop?.startTime || '')) > (activeRentalToStop?.plannedMinutes || 0) && 
+                  " Pobierz dopłatę za nadgodziny tą samą metodą."}
+              </p>
             </div>
 
             <div className="border-t pt-4 mt-2">

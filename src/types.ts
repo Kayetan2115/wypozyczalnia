@@ -18,6 +18,7 @@ export interface Equipment {
   name: string;
   type: EquipmentType;
   hourlyRate: number;
+  halfHourRate: number;
   status: EquipmentStatus;
   issueDescription?: string;
   doc_type: 'equipment';
@@ -36,7 +37,9 @@ export interface Rental {
   paymentMethod?: PaymentMethod;
   deposit: boolean;
   customerPhone?: string;
-  plannedDuration: number; // in hours
+  plannedMinutes: number;
+  rateUsed: number;
+  rateType: '30min' | '1h';
   overtimeMinutes?: number;
   sellerId: string;
   sellerName: string;

@@ -58,7 +58,8 @@ export default function AdminView({ user }: { user: UserProfile }) {
   
   const [newEqName, setNewEqName] = useState('');
   const [newEqType, setNewEqType] = useState<EquipmentType>('Kajak');
-  const [newEqRate, setNewEqRate] = useState(20);
+  const [newEqRate, setNewEqRate] = useState(25);
+  const [newEqHalfRate, setNewEqHalfRate] = useState(15);
 
   // Staff management
   const [newStaffUsername, setNewStaffUsername] = useState('');
@@ -95,6 +96,7 @@ export default function AdminView({ user }: { user: UserProfile }) {
         name: newEqName,
         type: newEqType,
         hourlyRate: newEqRate,
+        halfHourRate: newEqHalfRate,
         status: 'available'
       });
       toast.success('Dodano sprzęt');
@@ -184,9 +186,9 @@ export default function AdminView({ user }: { user: UserProfile }) {
     );
   };
 
-  const updateEquipmentRate = async (id: string, rate: number) => {
-    await api.updateEquipment(id, { hourlyRate: rate });
-    toast.success('Zaktualizowano cenę');
+  const updateEquipmentRate = async (id: string, hourlyRate: number, halfHourRate: number) => {
+    await api.updateEquipment(id, { hourlyRate, halfHourRate });
+    toast.success('Zaktualizowano ceny');
     fetchData();
   };
 
@@ -282,6 +284,7 @@ export default function AdminView({ user }: { user: UserProfile }) {
         <div className="overflow-x-auto pb-2">
           <TabsList className="inline-flex w-auto min-w-full sm:w-full">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="active">Wypożyczone</TabsTrigger>
             <TabsTrigger value="equipment">Sprzęt</TabsTrigger>
             <TabsTrigger value="history">Historia</TabsTrigger>
             <TabsTrigger value="staff">Pracownicy</TabsTrigger>
@@ -371,6 +374,49 @@ export default function AdminView({ user }: { user: UserProfile }) {
           </div>
         </TabsContent>
 
+        <TabsContent value="active">
+          <Card>
+            <CardHeader>
+              <CardTitle>Wypożyczone w tym momencie</CardTitle>
+              <CardDescription>Lista aktualnie aktywnych wypożyczeń.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Od</TableHead>
+                    <TableHead>Sprzęt</TableHead>
+                    <TableHead>Planowo</TableHead>
+                    <TableHead>Klient</TableHead>
+                    <TableHead>Płatność</TableHead>
+                    <TableHead>Obsługa</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rentals.filter(r => r.status === 'active').map(rental => (
+                    <TableRow key={rental.id}>
+                      <TableCell>{format(new Date(rental.startTime), 'HH:mm')}</TableCell>
+                      <TableCell className="font-bold">{rental.equipmentName}</TableCell>
+                      <TableCell>{rental.plannedMinutes} min</TableCell>
+                      <TableCell>{rental.customerPhone || '-'}</TableCell>
+                      <TableCell>
+                         <Badge variant="outline">{rental.paymentMethod === 'cash' ? 'Gotówka' : 'Karta'}</Badge>
+                         <span className="ml-2 text-xs font-semibold">{rental.totalAmount} PLN</span>
+                      </TableCell>
+                      <TableCell className="text-xs">{rental.sellerName}</TableCell>
+                    </TableRow>
+                  ))}
+                  {rentals.filter(r => r.status === 'active').length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-slate-400 italic">Brak aktywnych wypożyczeń</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="equipment">
           <Card>
             <CardHeader>
@@ -400,6 +446,10 @@ export default function AdminView({ user }: { user: UserProfile }) {
                   <Label>Cena (PLN/h)</Label>
                   <Input type="number" value={newEqRate} onChange={e => setNewEqRate(Number(e.target.value))} className="w-[100px]" />
                 </div>
+                <div className="grid gap-2">
+                  <Label>Cena (PLN/30min)</Label>
+                  <Input type="number" value={newEqHalfRate} onChange={e => setNewEqHalfRate(Number(e.target.value))} className="w-[100px]" />
+                </div>
                 <Button onClick={handleAddEquipment}><Plus className="mr-2 h-4 w-4" /> Dodaj</Button>
               </div>
 
@@ -409,6 +459,7 @@ export default function AdminView({ user }: { user: UserProfile }) {
                     <TableHead>Nazwa</TableHead>
                     <TableHead>Typ</TableHead>
                     <TableHead>Cena/h</TableHead>
+                    <TableHead>Cena/30m</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Akcje</TableHead>
                   </TableRow>
@@ -423,7 +474,15 @@ export default function AdminView({ user }: { user: UserProfile }) {
                           type="number" 
                           defaultValue={item.hourlyRate} 
                           className="h-8 w-20"
-                          onBlur={(e) => updateEquipmentRate(item.id, Number(e.target.value))}
+                          onBlur={(e) => updateEquipmentRate(item.id, Number(e.target.value), (item as any).halfHourRate || 0)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input 
+                          type="number" 
+                          defaultValue={(item as any).halfHourRate || 0} 
+                          className="h-8 w-20"
+                          onBlur={(e) => updateEquipmentRate(item.id, item.hourlyRate, Number(e.target.value))}
                         />
                       </TableCell>
                       <TableCell>
@@ -455,6 +514,7 @@ export default function AdminView({ user }: { user: UserProfile }) {
                   <TableRow>
                     <TableHead>Data</TableHead>
                     <TableHead>Sprzęt</TableHead>
+                    <TableHead>Klient</TableHead>
                     <TableHead>Czas</TableHead>
                     <TableHead>Kwota</TableHead>
                     <TableHead>Metoda</TableHead>
@@ -466,6 +526,7 @@ export default function AdminView({ user }: { user: UserProfile }) {
                     <TableRow key={rental.id}>
                       <TableCell>{format(new Date(rental.startTime), 'dd.MM HH:mm')}</TableCell>
                       <TableCell>{rental.equipmentName}</TableCell>
+                      <TableCell>{rental.customerPhone || '-'}</TableCell>
                       <TableCell>
                         {rental.endTime ? differenceInMinutes(new Date(rental.endTime), new Date(rental.startTime)) : '-'} min
                       </TableCell>
