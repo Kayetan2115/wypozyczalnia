@@ -436,7 +436,7 @@ export default function AdminView({ user }: { user: UserProfile }) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {['Kajak', 'Rower wodny', 'Deska SUP', 'Fleatcher', 'Perkoz', 'Alfa'].map(t => (
+                      {['Kajak', 'Rower wodny', 'Deska SUP', 'Łódź motorowa', 'Łódź żaglowa', 'Slip', 'Inne'].map(t => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
                     </SelectContent>

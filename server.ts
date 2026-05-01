@@ -27,16 +27,16 @@ async function startServer() {
   };
 
   // API Routes
-  const healthHandler = await import('./api/health.ts').catch(() => import('./api/health.js')).then(m => m.default);
-  const loginHandler = await import('./api/login.ts').catch(() => import('./api/login.js')).then(m => m.default);
-  const resetStatsHandler = await import('./api/reset-stats.ts').catch(() => import('./api/reset-stats.js')).then(m => m.default);
-  const usersIndexHandler = await import('./api/users/index.ts').catch(() => import('./api/users/index.js')).then(m => m.default);
-  const usersIdHandler = await import('./api/users/[id].ts').catch(() => import('./api/users/[id].js')).then(m => m.default);
-  const equipmentIndexHandler = await import('./api/equipment/index.ts').catch(() => import('./api/equipment/index.js')).then(m => m.default);
-  const equipmentIdHandler = await import('./api/equipment/[id].ts').catch(() => import('./api/equipment/[id].js')).then(m => m.default);
-  const rentalsIndexHandler = await import('./api/rentals/index.ts').catch(() => import('./api/rentals/index.js')).then(m => m.default);
-  const rentalsIdHandler = await import('./api/rentals/[id].ts').catch(() => import('./api/rentals/[id].js')).then(m => m.default);
-  const reportsIndexHandler = await import('./api/reports/index.ts').catch(() => import('./api/reports/index.js')).then(m => m.default);
+  const healthHandler = await import('./api/health.ts').then(m => m.default);
+  const loginHandler = await import('./api/login.ts').then(m => m.default);
+  const resetStatsHandler = await import('./api/reset-stats.ts').then(m => m.default);
+  const usersIndexHandler = await import('./api/users/index.ts').then(m => m.default);
+  const usersIdHandler = await import('./api/users/[id].ts').then(m => m.default);
+  const equipmentIndexHandler = await import('./api/equipment/index.ts').then(m => m.default);
+  const equipmentIdHandler = await import('./api/equipment/[id].ts').then(m => m.default);
+  const rentalsIndexHandler = await import('./api/rentals/index.ts').then(m => m.default);
+  const rentalsIdHandler = await import('./api/rentals/[id].ts').then(m => m.default);
+  const reportsIndexHandler = await import('./api/reports/index.ts').then(m => m.default);
 
   app.all('/api/health', vercelToExpress(healthHandler));
   app.all('/api/login', vercelToExpress(loginHandler));

@@ -251,7 +251,7 @@ export default function SellerView({ user }: { user: UserProfile }) {
           <>
             <h2 className="mb-4 text-lg font-bold">Wybierz kategorię sprzętu</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-              {['Kajak', 'Rower wodny', 'Deska SUP', 'Fleatcher', 'Perkoz', 'Alfa'].map((cat) => (
+              {['Kajak', 'Rower wodny', 'Deska SUP', 'Łódź motorowa', 'Łódź żaglowa', 'Slip', 'Inne'].map((cat) => (
                 <Card 
                   key={cat}
                   className="cursor-pointer hover:bg-slate-50 transition-colors border-2 hover:border-blue-500 active:scale-95"

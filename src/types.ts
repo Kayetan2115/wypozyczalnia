@@ -10,7 +10,7 @@ export interface UserProfile {
   doc_type: 'user';
 }
 
-export type EquipmentType = 'Kajak' | 'Rower wodny' | 'Deska SUP' | 'Fleatcher' | 'Perkoz' | 'Alfa';
+export type EquipmentType = 'Kajak' | 'Rower wodny' | 'Deska SUP' | 'Łódź motorowa' | 'Łódź żaglowa' | 'Slip' | 'Inne';
 export type EquipmentStatus = 'available' | 'rented' | 'broken';
 
 export interface Equipment {
