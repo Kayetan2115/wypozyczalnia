@@ -26,6 +26,8 @@ export default function AdminView({ user }: { user: UserProfile }) {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [reports, setReports] = useState<ShiftReport[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [employeeFilter, setEmployeeFilter] = useState('');
 
   const fetchData = async () => {
     try {
@@ -300,6 +302,39 @@ export default function AdminView({ user }: { user: UserProfile }) {
         </div>
 
         <TabsContent value="dashboard" className="space-y-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
+            <Card className="border-l-4 border-l-blue-500">
+              <CardHeader className="py-4">
+                <CardDescription className="text-xs uppercase font-bold">Dzisiejszy utarg</CardDescription>
+                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed').reduce((sum, r) => sum + (r.totalAmount || 0), 0)} PLN</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card className="border-l-4 border-l-green-500">
+              <CardHeader className="py-4">
+                <CardDescription className="text-xs uppercase font-bold">Gotówka</CardDescription>
+                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed' && r.paymentMethod === 'cash').reduce((sum, r) => sum + (r.totalAmount || 0), 0)} PLN</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card className="border-l-4 border-l-purple-500">
+              <CardHeader className="py-4">
+                <CardDescription className="text-xs uppercase font-bold">Karta</CardDescription>
+                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed' && r.paymentMethod === 'card').reduce((sum, r) => sum + (r.totalAmount || 0), 0)} PLN</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card className="border-l-4 border-l-amber-500">
+              <CardHeader className="py-4">
+                <CardDescription className="text-xs uppercase font-bold">Liczba Slipów</CardDescription>
+                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed' && r.equipmentName.toLowerCase().includes('slip')).length}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card className="border-l-4 border-l-slate-500">
+              <CardHeader className="py-4">
+                <CardDescription className="text-xs uppercase font-bold">Aktywne jednostki</CardDescription>
+                <CardTitle className="text-2xl">{equipment.filter(e => e.status === 'rented').length}</CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+
           <div className="flex justify-end">
             <Button 
               variant="outline" 
@@ -506,7 +541,26 @@ export default function AdminView({ user }: { user: UserProfile }) {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>Historia Wypożyczeń</CardTitle>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle>Historia Wypożyczeń</CardTitle>
+                  <CardDescription>Pełna historia operacji.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Sprzęt..." 
+                    className="max-w-[150px]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <Input 
+                    placeholder="Pracownik..." 
+                    className="max-w-[150px]"
+                    value={employeeFilter}
+                    onChange={(e) => setEmployeeFilter(e.target.value)}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -522,17 +576,23 @@ export default function AdminView({ user }: { user: UserProfile }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rentals.filter(r => r.status === 'completed').map(rental => (
-                    <TableRow key={rental.id}>
+                  {rentals
+                    .filter(r => r.status !== 'active')
+                    .filter(r => r.equipmentName.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .filter(r => r.sellerName.toLowerCase().includes(employeeFilter.toLowerCase()))
+                    .map(rental => (
+                    <TableRow key={rental.id} className={rental.status === 'cancelled' ? 'opacity-40 grayscale' : ''}>
                       <TableCell>{format(new Date(rental.startTime), 'dd.MM HH:mm')}</TableCell>
                       <TableCell>{rental.equipmentName}</TableCell>
                       <TableCell>{rental.customerPhone || '-'}</TableCell>
                       <TableCell>
                         {rental.endTime ? differenceInMinutes(new Date(rental.endTime), new Date(rental.startTime)) : '-'} min
                       </TableCell>
-                      <TableCell>{rental.totalAmount} PLN</TableCell>
+                      <TableCell className="font-bold">
+                        {rental.status === 'cancelled' ? 'ANULOWANO' : `${rental.totalAmount} PLN`}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{rental.paymentMethod === 'cash' ? 'Gotówka' : 'Karta'}</Badge>
+                        {rental.status === 'cancelled' ? '-' : <Badge variant="outline">{rental.paymentMethod === 'cash' ? 'Gotówka' : 'Karta'}</Badge>}
                       </TableCell>
                       <TableCell className="text-xs">{rental.sellerName}</TableCell>
                     </TableRow>

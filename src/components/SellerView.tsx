@@ -45,6 +45,8 @@ export default function SellerView({ user }: { user: UserProfile }) {
   const [isStopDialogOpen, setIsStopDialogOpen] = useState(false);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   
   const [customerPhone, setCustomerPhone] = useState('');
   const [plannedMinutes, setPlannedMinutes] = useState(60);
@@ -61,8 +63,18 @@ export default function SellerView({ user }: { user: UserProfile }) {
   };
 
   const handleStartRental = async () => {
-    if (!selectedEquipment) return;
+    if (!selectedEquipment || isStarting) return;
+    
+    // Check if equipment is still available (re-fetch to be sure)
+    const freshEq = equipment.find(e => e.id === selectedEquipment.id);
+    if (freshEq?.status === 'rented') {
+      toast.error('Ten sprzęt został właśnie wypożyczony przez kogoś innego.');
+      fetchData();
+      return;
+    }
+
     try {
+      setIsStarting(true);
       const rateUsed = rateType === '30min' ? selectedEquipment.halfHourRate : selectedEquipment.hourlyRate;
       const totalAmount = calculatePrice(selectedEquipment, plannedMinutes, rateType);
 
@@ -81,6 +93,7 @@ export default function SellerView({ user }: { user: UserProfile }) {
         sellerName: user.name,
         status: 'active'
       };
+
       await api.createRental(rentalData);
       await api.updateEquipment(selectedEquipment.id, { status: 'rented' });
       toast.success(`Wypożyczono: ${selectedEquipment.name} (${totalAmount} PLN)`);
@@ -91,6 +104,8 @@ export default function SellerView({ user }: { user: UserProfile }) {
       fetchData();
     } catch (error) {
       toast.error('Błąd podczas rozpoczynania wypożyczenia');
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -101,14 +116,19 @@ export default function SellerView({ user }: { user: UserProfile }) {
       const startTime = new Date(activeRentalToStop.startTime);
       const actualMinutes = differenceInMinutes(new Date(endTime), startTime);
       const plannedMinutes = activeRentalToStop.plannedMinutes;
-      const overtimeMinutes = Math.max(0, actualMinutes - plannedMinutes);
+      
+      // 5-minute grace period
+      const overtimeMinutes = Math.max(0, actualMinutes - plannedMinutes - 5);
       
       let finalTotal = activeRentalToStop.totalAmount || 0;
       
       if (overtimeMinutes > 0) {
-        const unitSize = activeRentalToStop.rateType === '30min' ? 30 : 60;
-        const extraUnits = Math.ceil(overtimeMinutes / unitSize);
-        const extraCharge = extraUnits * activeRentalToStop.rateUsed;
+        // Calculate overtime in 30-min increments
+        const eq = equipment.find(e => e.id === activeRentalToStop.equipmentId);
+        const overtimeRate = eq?.halfHourRate || activeRentalToStop.rateUsed / (activeRentalToStop.rateType === '1h' ? 2 : 1);
+        
+        const extraUnits = Math.ceil(overtimeMinutes / 30);
+        const extraCharge = extraUnits * overtimeRate;
         finalTotal += extraCharge;
         toast.info(`Naliczono nadgodziny: +${extraCharge} PLN`);
       }
@@ -144,6 +164,24 @@ export default function SellerView({ user }: { user: UserProfile }) {
       fetchData();
     } catch (error) {
       toast.error('Błąd podczas kończenia wypożyczenia');
+    }
+  };
+
+  const handleCancelRental = async () => {
+    if (!activeRentalToStop) return;
+    try {
+      await api.updateRental(activeRentalToStop.id, {
+        endTime: new Date().toISOString(),
+        status: 'cancelled',
+        totalAmount: 0
+      });
+      await api.updateEquipment(activeRentalToStop.equipmentId, { status: 'available' });
+      toast.warning('Anulowano wypożyczenie.');
+      setIsCancelDialogOpen(false);
+      setIsStopDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Błąd podczas anulowania');
     }
   };
 
@@ -428,7 +466,9 @@ export default function SellerView({ user }: { user: UserProfile }) {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleStartRental} className="w-full py-6 text-lg font-bold">PRZYJMIJ WPŁATĘ I START</Button>
+            <Button onClick={handleStartRental} disabled={isStarting} className="w-full py-6 text-lg font-bold">
+              {isStarting ? "PROWADZĘ WPIS..." : "PRZYJMIJ WPŁATĘ I START"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -454,14 +494,14 @@ export default function SellerView({ user }: { user: UserProfile }) {
                     <p className="font-semibold">{activeRentalToStop.plannedMinutes} min</p>
                     <p className="text-xs text-blue-600 font-bold">{activeRentalToStop.totalAmount} PLN</p>
                   </div>
-                  {differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) > activeRentalToStop.plannedMinutes && (
+                  {differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) > activeRentalToStop.plannedMinutes + 5 && (
                     <div className="border-l pl-4">
                       <p className="text-red-500 text-[10px] uppercase font-bold">Nadgodziny</p>
                       <p className="font-semibold text-red-600">
                         {differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) - activeRentalToStop.plannedMinutes} min
                       </p>
                       <p className="text-xs text-red-600 font-bold">
-                        +{Math.ceil((differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) - activeRentalToStop.plannedMinutes) / (activeRentalToStop.rateType === '30min' ? 30 : 60)) * activeRentalToStop.rateUsed} PLN
+                        +{Math.ceil((differenceInMinutes(new Date(), new Date(activeRentalToStop.startTime)) - activeRentalToStop.plannedMinutes - 5) / 30) * (equipment.find(e => e.id === activeRentalToStop.equipmentId)?.halfHourRate || activeRentalToStop.rateUsed / (activeRentalToStop.rateType === '1h' ? 2 : 1))} PLN
                       </p>
                     </div>
                   )}
@@ -472,13 +512,23 @@ export default function SellerView({ user }: { user: UserProfile }) {
             <div className="space-y-3">
               <p className="text-sm font-medium text-center text-slate-600">
                 Płatność została uregulowana z góry ({activeRentalToStop?.paymentMethod === 'cash' ? 'Gotówka' : 'Karta'}).
-                {differenceInMinutes(new Date(), new Date(activeRentalToStop?.startTime || '')) > (activeRentalToStop?.plannedMinutes || 0) && 
+                {differenceInMinutes(new Date(), new Date(activeRentalToStop?.startTime || '')) > (activeRentalToStop?.plannedMinutes || 0) + 5 && 
                   " Pobierz dopłatę za nadgodziny tą samą metodą."}
               </p>
             </div>
 
+            <div className="border-t pt-4 mt-2 grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                onClick={() => setIsCancelDialogOpen(true)}
+              >
+                Anuluj (Błąd)
+              </Button>
+              <Button onClick={handleStopRental} className="w-full bg-slate-900">ZAKOŃCZ</Button>
+            </div>
+
             <div className="border-t pt-4 mt-2">
-              <div className="grid gap-2">
                 <Label htmlFor="stop-issue" className="text-red-600 font-semibold flex items-center gap-1">
                   <AlertTriangle className="h-4 w-4" /> Czy wystąpiła usterka?
                 </Label>
@@ -491,7 +541,6 @@ export default function SellerView({ user }: { user: UserProfile }) {
                 />
               </div>
             </div>
-          </div>
           <DialogFooter>
             <Button onClick={handleStopRental} className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700">
               ZAKOŃCZ I ROZLICZ
@@ -561,6 +610,23 @@ export default function SellerView({ user }: { user: UserProfile }) {
           </p>
           <DialogFooter>
             <Button onClick={handleCloseShift} className="w-full">POTWIERDŹ ZAMKNIĘCIE</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Anulować wypożyczenie?</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 text-center">
+            <p className="text-sm text-slate-600">
+              Uwaga: Anulowanie spowoduje, że wypożyczenie nie będzie wliczone do utargu ani historii statystyk. Używaj tylko w przypadku pomyłek.
+            </p>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)}>Wróć</Button>
+            <Button variant="destructive" onClick={handleCancelRental}>POTWIERDŹ ANULOWANIE</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
