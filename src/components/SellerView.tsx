@@ -47,6 +47,7 @@ export default function SellerView({ user }: { user: UserProfile }) {
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   
   const [customerPhone, setCustomerPhone] = useState('');
   const [plannedMinutes, setPlannedMinutes] = useState(60);
@@ -110,8 +111,9 @@ export default function SellerView({ user }: { user: UserProfile }) {
   };
 
   const handleStopRental = async () => {
-    if (!activeRentalToStop) return;
+    if (!activeRentalToStop || isEnding) return;
     try {
+      setIsEnding(true);
       const endTime = new Date().toISOString();
       const startTime = new Date(activeRentalToStop.startTime);
       const actualMinutes = differenceInMinutes(new Date(endTime), startTime);
@@ -164,6 +166,8 @@ export default function SellerView({ user }: { user: UserProfile }) {
       fetchData();
     } catch (error) {
       toast.error('Błąd podczas kończenia wypożyczenia');
+    } finally {
+      setIsEnding(false);
     }
   };
 
@@ -522,10 +526,17 @@ export default function SellerView({ user }: { user: UserProfile }) {
                 variant="outline" 
                 className="w-full border-red-200 text-red-600 hover:bg-red-50"
                 onClick={() => setIsCancelDialogOpen(true)}
+                disabled={isEnding}
               >
                 Anuluj (Błąd)
               </Button>
-              <Button onClick={handleStopRental} className="w-full bg-slate-900">ZAKOŃCZ</Button>
+              <Button 
+                onClick={handleStopRental} 
+                className="w-full bg-slate-900"
+                disabled={isEnding}
+              >
+                {isEnding ? "KOŃCZĘ..." : "ZAKOŃCZ"}
+              </Button>
             </div>
 
             <div className="border-t pt-4 mt-2">
@@ -542,8 +553,12 @@ export default function SellerView({ user }: { user: UserProfile }) {
               </div>
             </div>
           <DialogFooter>
-            <Button onClick={handleStopRental} className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700">
-              ZAKOŃCZ I ROZLICZ
+            <Button 
+              onClick={handleStopRental} 
+              disabled={isEnding}
+              className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700"
+            >
+              {isEnding ? "ROZLICZANIE..." : "ZAKOŃCZ I ROZLICZ"}
             </Button>
           </DialogFooter>
         </DialogContent>

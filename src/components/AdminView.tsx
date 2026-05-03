@@ -199,6 +199,27 @@ export default function AdminView({ user }: { user: UserProfile }) {
     toast.success('Oznaczono jako naprawione');
     fetchData();
   };
+  
+  const handleCancelRental = async (rental: Rental) => {
+    showConfirm(
+      'Anuluj wypożyczenie',
+      `Czy na pewno chcesz anulować wypożyczenie: ${rental.equipmentName}? Ta operacja nie zostanie wliczona do statystyk.`,
+      async () => {
+        try {
+          await api.updateRental(rental.id, {
+            endTime: new Date().toISOString(),
+            status: 'cancelled',
+            totalAmount: 0
+          });
+          await api.updateEquipment(rental.equipmentId, { status: 'available' });
+          toast.warning('Anulowano wypożyczenie.');
+          fetchData();
+        } catch (error) {
+          toast.error('Błąd podczas anulowania');
+        }
+      }
+    );
+  };
 
   const handleDeleteUser = async (uid: string) => {
     if (uid === user.uid) {
@@ -283,17 +304,17 @@ export default function AdminView({ user }: { user: UserProfile }) {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <div className="overflow-x-auto pb-2">
-          <TabsList className="inline-flex w-auto min-w-full sm:w-full">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="active">Wypożyczone</TabsTrigger>
-            <TabsTrigger value="equipment">Sprzęt</TabsTrigger>
-            <TabsTrigger value="history">Historia</TabsTrigger>
-            <TabsTrigger value="staff">Pracownicy</TabsTrigger>
-            <TabsTrigger value="alerts" className="relative">
+        <div className="pb-2">
+          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:flex h-auto p-1 bg-muted rounded-lg w-full gap-1">
+            <TabsTrigger value="dashboard" className="data-[state=active]:bg-background py-2">Dashboard</TabsTrigger>
+            <TabsTrigger value="active" className="data-[state=active]:bg-background py-2">Wypożyczone</TabsTrigger>
+            <TabsTrigger value="equipment" className="data-[state=active]:bg-background py-2">Sprzęt</TabsTrigger>
+            <TabsTrigger value="history" className="data-[state=active]:bg-background py-2">Historia</TabsTrigger>
+            <TabsTrigger value="staff" className="data-[state=active]:bg-background py-2">Pracownicy</TabsTrigger>
+            <TabsTrigger value="alerts" className="relative data-[state=active]:bg-background py-2">
               Alerty
               {brokenEquipment.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
                   {brokenEquipment.length}
                 </span>
               )}
@@ -425,6 +446,7 @@ export default function AdminView({ user }: { user: UserProfile }) {
                     <TableHead>Klient</TableHead>
                     <TableHead>Płatność</TableHead>
                     <TableHead>Obsługa</TableHead>
+                    <TableHead className="text-right">Akcje</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -439,11 +461,21 @@ export default function AdminView({ user }: { user: UserProfile }) {
                          <span className="ml-2 text-xs font-semibold">{rental.totalAmount} PLN</span>
                       </TableCell>
                       <TableCell className="text-xs">{rental.sellerName}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleCancelRental(rental)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" /> Anuluj
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {rentals.filter(r => r.status === 'active').length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-slate-400 italic">Brak aktywnych wypożyczeń</TableCell>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-400 italic">Brak aktywnych wypożyczeń</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
