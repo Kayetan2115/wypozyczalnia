@@ -209,7 +209,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl p-4">
+      <main className="mx-auto w-full max-w-[1600px] p-4">
         {user.role === 'admin' ? <AdminView user={user} /> : <SellerView user={user} />}
       </main>
       <Toaster position="top-center" />

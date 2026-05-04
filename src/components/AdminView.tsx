@@ -301,20 +301,20 @@ export default function AdminView({ user }: { user: UserProfile }) {
   const brokenEquipment = equipment.filter(e => e.status === 'broken');
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <div className="pb-2">
-          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:flex h-auto p-1 bg-muted rounded-lg w-full gap-1">
-            <TabsTrigger value="dashboard" className="data-[state=active]:bg-background py-2">Dashboard</TabsTrigger>
-            <TabsTrigger value="active" className="data-[state=active]:bg-background py-2">Wypożyczone</TabsTrigger>
-            <TabsTrigger value="equipment" className="data-[state=active]:bg-background py-2">Sprzęt</TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-background py-2">Historia</TabsTrigger>
-            <TabsTrigger value="deleted" className="data-[state=active]:bg-background py-2">Usunięte</TabsTrigger>
-            <TabsTrigger value="staff" className="data-[state=active]:bg-background py-2">Pracownicy</TabsTrigger>
-            <TabsTrigger value="alerts" className="relative data-[state=active]:bg-background py-2">
+    <div className="space-y-8">
+      <Tabs defaultValue="dashboard" className="w-full">
+        <div className="sticky top-[65px] z-40 bg-slate-50/95 backdrop-blur-sm -mx-4 px-4 py-2 border-b mb-6">
+          <TabsList className="flex flex-wrap h-auto p-1 bg-muted/50 rounded-lg w-full gap-1">
+            <TabsTrigger value="dashboard" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Dashboard</TabsTrigger>
+            <TabsTrigger value="active" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Wypożyczone</TabsTrigger>
+            <TabsTrigger value="equipment" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Sprzęt</TabsTrigger>
+            <TabsTrigger value="history" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Historia</TabsTrigger>
+            <TabsTrigger value="deleted" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Usunięte</TabsTrigger>
+            <TabsTrigger value="staff" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Pracownicy</TabsTrigger>
+            <TabsTrigger value="alerts" className="flex-1 min-w-[120px] relative data-[state=active]:bg-background py-2.5">
               Alerty
               {brokenEquipment.length > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
                   {brokenEquipment.length}
                 </span>
               )}
@@ -322,108 +322,97 @@ export default function AdminView({ user }: { user: UserProfile }) {
           </TabsList>
         </div>
 
-        <TabsContent value="dashboard" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card>
+        <TabsContent value="dashboard" className="space-y-8 pt-2">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="shadow-sm border-none shadow-slate-200/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Przychód Całkowity</CardTitle>
-                <DollarSign className="h-4 w-4 text-slate-500" />
+                <CardTitle className="text-sm font-medium text-slate-500">Przychód Całkowity</CardTitle>
+                <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-slate-600" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalRevenue} PLN</div>
+                <div className="text-3xl font-bold tracking-tight">{totalRevenue} PLN</div>
+                <p className="text-xs text-slate-400 mt-1">Suma wszystkich rozliczonych</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="shadow-sm border-none shadow-slate-200/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Gotówka</CardTitle>
-                <Wallet className="h-4 w-4 text-blue-500" />
+                <CardTitle className="text-sm font-medium text-slate-500">Gotówka</CardTitle>
+                <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Wallet className="h-4 w-4 text-blue-500" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{cashRevenue} PLN</div>
+                <div className="text-3xl font-bold tracking-tight">{cashRevenue} PLN</div>
+                <p className="text-xs text-slate-400 mt-1">Przyjęte w gotówce</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="shadow-sm border-none shadow-slate-200/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Karta</CardTitle>
-                <CreditCard className="h-4 w-4 text-green-500" />
+                <CardTitle className="text-sm font-medium text-slate-500">Karta</CardTitle>
+                <div className="h-8 w-8 rounded-lg bg-green-50 flex items-center justify-center">
+                  <CreditCard className="h-4 w-4 text-green-500" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{cardRevenue} PLN</div>
+                <div className="text-3xl font-bold tracking-tight">{cardRevenue} PLN</div>
+                <p className="text-xs text-slate-400 mt-1">Terminale płatnicze</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="shadow-sm border-none shadow-slate-200/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Aktywne Jednostki</CardTitle>
-                <Anchor className="h-4 w-4 text-slate-500" />
+                <CardTitle className="text-sm font-medium text-slate-500">Aktywne Jednostki</CardTitle>
+                <div className="h-8 w-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                  <Anchor className="h-4 w-4 text-orange-500" />
+                </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between">
-                <div className="text-2xl font-bold">{equipment.filter(e => e.status === 'rented').length} / {equipment.length}</div>
-                <Button variant="outline" size="sm" onClick={handleResetStats} className="text-xs text-red-600 border-red-200 hover:bg-red-50">
+                <div>
+                  <div className="text-3xl font-bold tracking-tight">{equipment.filter(e => e.status === 'rented').length} / {equipment.length}</div>
+                  <p className="text-xs text-slate-400 mt-1">Jednostki na wodzie</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleResetStats} className="text-[10px] h-7 px-2 text-red-600 border-red-100 hover:bg-red-50 font-bold uppercase transition-all">
                   Resetuj Dane
                 </Button>
               </CardContent>
             </Card>
           </div>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader className="py-4">
-                <CardDescription className="text-xs uppercase font-bold">Dzisiejszy utarg</CardDescription>
-                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed').reduce((sum, r) => sum + (r.totalAmount || 0), 0)} PLN</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="border-l-4 border-l-green-500">
-              <CardHeader className="py-4">
-                <CardDescription className="text-xs uppercase font-bold">Gotówka</CardDescription>
-                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed' && r.paymentMethod === 'cash').reduce((sum, r) => sum + (r.totalAmount || 0), 0)} PLN</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="border-l-4 border-l-purple-500">
-              <CardHeader className="py-4">
-                <CardDescription className="text-xs uppercase font-bold">Karta</CardDescription>
-                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed' && r.paymentMethod === 'card').reduce((sum, r) => sum + (r.totalAmount || 0), 0)} PLN</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="border-l-4 border-l-amber-500">
-              <CardHeader className="py-4">
-                <CardDescription className="text-xs uppercase font-bold">Liczba Slipów</CardDescription>
-                <CardTitle className="text-2xl">{rentals.filter(r => r.status === 'completed' && r.equipmentName.toLowerCase().includes('slip')).length}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="border-l-4 border-l-slate-500">
-              <CardHeader className="py-4">
-                <CardDescription className="text-xs uppercase font-bold">Aktywne jednostki</CardDescription>
-                <CardTitle className="text-2xl">{equipment.filter(e => e.status === 'rented').length}</CardTitle>
-              </CardHeader>
-            </Card>
+
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {[
+              { label: 'Dzisiejszy utarg', val: rentals.filter(r => r.status === 'completed').reduce((sum, r) => sum + (r.totalAmount || 0), 0), color: 'blue' },
+              { label: 'Gotówka', val: rentals.filter(r => r.status === 'completed' && r.paymentMethod === 'cash').reduce((sum, r) => sum + (r.totalAmount || 0), 0), color: 'green' },
+              { label: 'Karta', val: rentals.filter(r => r.status === 'completed' && r.paymentMethod === 'card').reduce((sum, r) => sum + (r.totalAmount || 0), 0), color: 'purple' },
+              { label: 'Liczba Slipów', val: rentals.filter(r => r.status === 'completed' && r.equipmentName.toLowerCase().includes('slip')).length, color: 'amber' },
+              { label: 'Aktywne jednostki', val: equipment.filter(e => e.status === 'rented').length, color: 'slate' }
+            ].map((stat, i) => (
+              <Card key={i} className={`border-l-4 border-l-${stat.color}-500 shadow-sm`}>
+                <CardHeader className="py-4 px-5">
+                  <CardDescription className="text-[10px] uppercase font-black tracking-widest text-slate-500">{stat.label}</CardDescription>
+                  <CardTitle className="text-2xl font-black">{stat.val} {stat.label.includes('Liczba') || stat.label.includes('jednostki') ? '' : 'PLN'}</CardTitle>
+                </CardHeader>
+              </Card>
+            ))}
           </div>
 
-          <div className="flex justify-end">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-red-500 border-red-200 hover:bg-red-50"
-              onClick={handleResetStats}
-              disabled={isResetting}
-            >
-              {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
-              Resetuj Statystyki
-            </Button>
-          </div>
-
-          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-            <Card className="lg:col-span-4">
+          <div className="grid gap-6 grid-cols-1 xl:grid-cols-7">
+            <Card className="xl:col-span-4 shadow-sm border-none">
               <CardHeader>
-                <CardTitle>Popularność Sprzętu</CardTitle>
+                <CardTitle className="text-lg font-bold">Popularność Sprzętu</CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px] min-h-[300px] w-full relative">
+              <CardContent className="h-[400px] w-full pt-4">
                 {typePopularity.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={typePopularity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <BarChart data={typePopularity} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} tick={{fill: '#94a3b8'}} />
+                      <YAxis fontSize={11} tickLine={false} axisLine={false} tick={{fill: '#94a3b8'}} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        cursor={{ fill: '#f8fafc' }}
+                      />
+                      <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={40} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -433,28 +422,30 @@ export default function AdminView({ user }: { user: UserProfile }) {
                 )}
               </CardContent>
             </Card>
-            <Card className="lg:col-span-3">
+            <Card className="xl:col-span-3 shadow-sm border-none">
               <CardHeader>
-                <CardTitle>Metody Płatności</CardTitle>
+                <CardTitle className="text-lg font-bold">Metody Płatności</CardTitle>
               </CardHeader>
-              <CardContent className="h-[300px] min-h-[300px] w-full relative">
+              <CardContent className="h-[400px] w-full pt-4 relative">
                 {paymentData.some(d => d.value > 0) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={paymentData}
                         cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
+                        cy="45%"
+                        innerRadius={80}
+                        outerRadius={110}
+                        paddingAngle={8}
                         dataKey="value"
                       >
                         {paymentData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={4} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -462,12 +453,25 @@ export default function AdminView({ user }: { user: UserProfile }) {
                     Brak danych o płatnościach
                   </div>
                 )}
-                <div className="mt-4 flex justify-center gap-4 text-sm">
-                  <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-blue-500" /> Gotówka</div>
-                  <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-green-500" /> Karta</div>
+                <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-6 text-sm font-medium">
+                  <div className="flex items-center gap-2"><div className="h-4 w-4 rounded-md bg-blue-500" /> Gotówka</div>
+                  <div className="flex items-center gap-2"><div className="h-4 w-4 rounded-md bg-green-500" /> Karta</div>
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          <div className="flex justify-center pt-4">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-red-500 border-red-200 hover:bg-red-50 font-bold px-8 shadow-sm"
+              onClick={handleResetStats}
+              disabled={isResetting}
+            >
+              {isResetting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCcw className="mr-2 h-5 w-5" />}
+              Resetuj Statystyki Całkowite
+            </Button>
           </div>
         </TabsContent>
 
