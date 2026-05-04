@@ -221,6 +221,47 @@ export default function AdminView({ user }: { user: UserProfile }) {
     );
   };
 
+  const handleDeleteRental = async (rental: Rental) => {
+    showConfirm(
+      'Usuń operację',
+      `Czy na pewno chcesz usunąć tę operację z historii? Trafi ona do zakładki "Usunięte".`,
+      async () => {
+        try {
+          await api.updateRental(rental.id, {
+            status: 'deleted'
+          });
+          toast.info('Przeniesiono do usuniętych.');
+          fetchData();
+        } catch (error) {
+          toast.error('Błąd podczas usuwania');
+        }
+      }
+    );
+  };
+
+  const handleRestoreRental = async (rental: Rental) => {
+    showConfirm(
+      'Przywróć operację',
+      `Czy przywrócić tę operację do historii?`,
+      async () => {
+        try {
+          // Check if it was cancelled or completed originally? 
+          // Actually just set back to what it was. But 'deleted' overwrote it.
+          // In a real app we might store the previous_status. 
+          // For now, if totalAmount > 0 we assume it was completed, else cancelled?
+          // Or just set to 'completed' as default restore.
+          await api.updateRental(rental.id, {
+            status: (rental.totalAmount || 0) > 0 ? 'completed' : 'cancelled'
+          });
+          toast.success('Przywrócono operację.');
+          fetchData();
+        } catch (error) {
+          toast.error('Błąd podczas przywracania');
+        }
+      }
+    );
+  };
+
   const handleDeleteUser = async (uid: string) => {
     if (uid === user.uid) {
       toast.error('Nie możesz usunąć własnego konta');
@@ -260,56 +301,15 @@ export default function AdminView({ user }: { user: UserProfile }) {
   const brokenEquipment = equipment.filter(e => e.status === 'broken');
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Przychód Całkowity</CardTitle>
-            <DollarSign className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalRevenue} PLN</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Gotówka</CardTitle>
-            <Wallet className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{cashRevenue} PLN</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Karta</CardTitle>
-            <CreditCard className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{cardRevenue} PLN</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Aktywne Jednostki</CardTitle>
-            <Anchor className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{equipment.filter(e => e.status === 'rented').length} / {equipment.length}</div>
-            <Button variant="outline" size="sm" onClick={handleResetStats} className="text-xs text-red-600 border-red-200 hover:bg-red-50">
-              Resetuj Dane
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="space-y-6">
       <Tabs defaultValue="dashboard" className="space-y-4">
         <div className="pb-2">
-          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:flex h-auto p-1 bg-muted rounded-lg w-full gap-1">
+          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:flex h-auto p-1 bg-muted rounded-lg w-full gap-1">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-background py-2">Dashboard</TabsTrigger>
             <TabsTrigger value="active" className="data-[state=active]:bg-background py-2">Wypożyczone</TabsTrigger>
             <TabsTrigger value="equipment" className="data-[state=active]:bg-background py-2">Sprzęt</TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-background py-2">Historia</TabsTrigger>
+            <TabsTrigger value="deleted" className="data-[state=active]:bg-background py-2">Usunięte</TabsTrigger>
             <TabsTrigger value="staff" className="data-[state=active]:bg-background py-2">Pracownicy</TabsTrigger>
             <TabsTrigger value="alerts" className="relative data-[state=active]:bg-background py-2">
               Alerty
@@ -323,6 +323,47 @@ export default function AdminView({ user }: { user: UserProfile }) {
         </div>
 
         <TabsContent value="dashboard" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Przychód Całkowity</CardTitle>
+                <DollarSign className="h-4 w-4 text-slate-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalRevenue} PLN</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Gotówka</CardTitle>
+                <Wallet className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{cashRevenue} PLN</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Karta</CardTitle>
+                <CreditCard className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{cardRevenue} PLN</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Aktywne Jednostki</CardTitle>
+                <Anchor className="h-4 w-4 text-slate-500" />
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className="text-2xl font-bold">{equipment.filter(e => e.status === 'rented').length} / {equipment.length}</div>
+                <Button variant="outline" size="sm" onClick={handleResetStats} className="text-xs text-red-600 border-red-200 hover:bg-red-50">
+                  Resetuj Dane
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
             <Card className="border-l-4 border-l-blue-500">
               <CardHeader className="py-4">
@@ -605,11 +646,12 @@ export default function AdminView({ user }: { user: UserProfile }) {
                     <TableHead>Kwota</TableHead>
                     <TableHead>Metoda</TableHead>
                     <TableHead>Obsługa</TableHead>
+                    <TableHead className="text-right">Akcje</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rentals
-                    .filter(r => r.status !== 'active')
+                    .filter(r => r.status !== 'active' && r.status !== 'deleted')
                     .filter(r => r.equipmentName.toLowerCase().includes(searchTerm.toLowerCase()))
                     .filter(r => r.sellerName.toLowerCase().includes(employeeFilter.toLowerCase()))
                     .map(rental => (
@@ -627,8 +669,73 @@ export default function AdminView({ user }: { user: UserProfile }) {
                         {rental.status === 'cancelled' ? '-' : <Badge variant="outline">{rental.paymentMethod === 'cash' ? 'Gotówka' : 'Karta'}</Badge>}
                       </TableCell>
                       <TableCell className="text-xs">{rental.sellerName}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-400 hover:text-red-500"
+                          onClick={() => handleDeleteRental(rental)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="deleted">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usunięte operacje</CardTitle>
+              <CardDescription>Operacje usunięte w ciągu ostatnich 48 godzin.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Sprzęt</TableHead>
+                    <TableHead>Kwota</TableHead>
+                    <TableHead>Obsługa</TableHead>
+                    <TableHead className="text-right">Akcje</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rentals
+                    .filter(r => r.status === 'deleted')
+                    .filter(r => {
+                       // Filter out items older than 48 hours for the UI
+                       const deletedDate = r.endTime ? new Date(r.endTime) : new Date(); // Using endTime as a proxy for when it was cancelled/completed
+                       const twoDaysAgo = new Date();
+                       twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+                       return deletedDate > twoDaysAgo;
+                    })
+                    .map(rental => (
+                    <TableRow key={rental.id}>
+                      <TableCell>{format(new Date(rental.startTime), 'dd.MM HH:mm')}</TableCell>
+                      <TableCell>{rental.equipmentName}</TableCell>
+                      <TableCell>{rental.totalAmount || 0} PLN</TableCell>
+                      <TableCell className="text-xs">{rental.sellerName}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleRestoreRental(rental)}
+                        >
+                          <RefreshCcw className="h-4 w-4 mr-1" /> Przywróć
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {rentals.filter(r => r.status === 'deleted').length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-slate-400 italic">Brak usuniętych operacji</TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

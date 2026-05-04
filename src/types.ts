@@ -24,7 +24,7 @@ export interface Equipment {
   doc_type: 'equipment';
 }
 
-export type RentalStatus = 'active' | 'completed' | 'cancelled';
+export type RentalStatus = 'active' | 'completed' | 'cancelled' | 'deleted';
 export type PaymentMethod = 'cash' | 'card';
 
 export interface Rental {
