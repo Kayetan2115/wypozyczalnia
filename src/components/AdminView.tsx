@@ -301,17 +301,17 @@ export default function AdminView({ user }: { user: UserProfile }) {
   const brokenEquipment = equipment.filter(e => e.status === 'broken');
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <Tabs defaultValue="dashboard" className="w-full">
-        <div className="sticky top-[65px] z-40 bg-slate-50/95 backdrop-blur-sm -mx-4 px-4 py-2 border-b mb-6">
-          <TabsList className="flex flex-wrap h-auto p-1 bg-muted/50 rounded-lg w-full gap-1">
-            <TabsTrigger value="dashboard" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Dashboard</TabsTrigger>
-            <TabsTrigger value="active" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Wypożyczone</TabsTrigger>
-            <TabsTrigger value="equipment" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Sprzęt</TabsTrigger>
-            <TabsTrigger value="history" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Historia</TabsTrigger>
-            <TabsTrigger value="deleted" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Usunięte</TabsTrigger>
-            <TabsTrigger value="staff" className="flex-1 min-w-[120px] data-[state=active]:bg-background py-2.5">Pracownicy</TabsTrigger>
-            <TabsTrigger value="alerts" className="flex-1 min-w-[120px] relative data-[state=active]:bg-background py-2.5">
+        <div className="bg-slate-100/50 p-1.5 rounded-xl border mb-8">
+          <TabsList className="flex flex-wrap h-auto bg-transparent border-none w-full gap-1">
+            <TabsTrigger value="dashboard" className="flex-1 min-w-[100px] data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 rounded-lg transition-all">Dashboard</TabsTrigger>
+            <TabsTrigger value="active" className="flex-1 min-w-[100px] data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 rounded-lg transition-all">Wypożyczone</TabsTrigger>
+            <TabsTrigger value="equipment" className="flex-1 min-w-[100px] data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 rounded-lg transition-all">Sprzęt</TabsTrigger>
+            <TabsTrigger value="history" className="flex-1 min-w-[100px] data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 rounded-lg transition-all">Historia</TabsTrigger>
+            <TabsTrigger value="deleted" className="flex-1 min-w-[100px] data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 rounded-lg transition-all">Usunięte</TabsTrigger>
+            <TabsTrigger value="staff" className="flex-1 min-w-[100px] data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 rounded-lg transition-all">Pracownicy</TabsTrigger>
+            <TabsTrigger value="alerts" className="flex-1 min-w-[100px] relative data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 rounded-lg transition-all">
               Alerty
               {brokenEquipment.length > 0 && (
                 <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
@@ -322,8 +322,8 @@ export default function AdminView({ user }: { user: UserProfile }) {
           </TabsList>
         </div>
 
-        <TabsContent value="dashboard" className="space-y-8 pt-2">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <TabsContent value="dashboard" className="space-y-8 outline-none">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="shadow-sm border-none shadow-slate-200/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-slate-500">Przychód Całkowity</CardTitle>
