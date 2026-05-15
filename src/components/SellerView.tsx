@@ -380,25 +380,19 @@ export default function SellerView({ user }: { user: UserProfile }) {
                   type="button"
                   variant={rateType === '30min' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => {
-                    setRateType('30min');
-                    setPlannedMinutes(30);
-                  }}
+                  onClick={() => setRateType('30min')}
                   className="flex-1"
                 >
-                  30 min ({selectedEquipment?.halfHourRate} zł)
+                  Stawka 30 min ({selectedEquipment?.halfHourRate} zł)
                 </Button>
                 <Button 
                   type="button"
                   variant={rateType === '1h' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => {
-                    setRateType('1h');
-                    setPlannedMinutes(60);
-                  }}
+                  onClick={() => setRateType('1h')}
                   className="flex-1"
                 >
-                  1 godz. ({selectedEquipment?.hourlyRate} zł)
+                  Stawka 1 godz. ({selectedEquipment?.hourlyRate} zł)
                 </Button>
               </div>
               
@@ -412,10 +406,9 @@ export default function SellerView({ user }: { user: UserProfile }) {
                     className="h-8 text-xs font-mono"
                     onClick={() => {
                       setPlannedMinutes(mins);
-                      // Auto switch rate type based on logic or keep current?
-                      // If user selects 30 or 90 and current is 1h, maybe stay or switch?
-                      // Let's keep it manual or simple:
-                      if (mins % 60 !== 0) setRateType('30min');
+                      // Only auto-switch rate type for the first/short selection if not already chosen
+                      if (mins === 30 && rateType === '1h') setRateType('30min');
+                      if (mins >= 60 && mins % 60 === 0 && rateType === '30min') setRateType('1h');
                     }}
                   >
                     {mins >= 60 ? `${mins/60}h` : `${mins}m`}
